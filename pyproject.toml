@@ -1,0 +1,27 @@
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "edshat"
+version = "1.0.0"
+authors = [
+  { name="Marissa Griffith", email="mpp19@piit.edu" },
+]
+description = "A flexible bioinformatics pipeline for assembly and comparative genomics."
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "snakemake>=7.0",
+    "pandas>=1.0",
+    "pyyaml>=5.0",
+]
+
+[project.scripts]
+edshat = "edshat.edshat:cli:main"

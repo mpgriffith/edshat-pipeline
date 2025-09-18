@@ -1,0 +1,88 @@
+
+include: "rules/common.smk"
+include: "rules/assembly.smk"
+include: "rules/annotate.smk"
+include: "rules/species.smk"
+include: "rules/download.smk"
+include: "rules/comparative.smk"
+
+import pandas as pd
+import os
+from pathlib import Path
+
+samples = pd.read_csv(config['samples'], index_col=0)
+print(samples.iloc[0]['Read1'], samples.iloc[0]['Read2'])
+
+# isolate_dir = Path(config.get('isolate_dir', Path().cwd().resolve() / 'isolates'))
+isolate_dir = config.get('isolate_dir', os.path.join(config.get('workdir', os.path.abspath(os.curdir)), 'isolates'))
+print(f"Isolate directory: {isolate_dir}")
+wildcard_constraints:
+    sample= "[^/]+"
+
+
+# def get_species(wildcards):
+#     with checkpoints.gtdbtk.get(samples=wildcards.sample).output[0].open() as f:
+#         df = pd.read_csv(f)
+#         species = df['classification'].map(lambda s: s.split('__')[-1]
+#         species = species[0]
+#         return species
+
+def get_outputs(w, type='all'):
+    fastas = expand(isolate_dir + '/{sample}/{sample}.fasta', sample=samples.index)
+    metrics = expand(isolate_dir + '/{sample}/{sample}.metrics.csv', sample=samples.index)
+    annotations = expand(isolate_dir + '/{sample}/annotation/{sample}.faa', sample=samples.index)
+    amr = expand(isolate_dir + '/{sample}/{sample}.amrfinder.tsv', sample=samples.index)
+    mlst = expand(isolate_dir + '/{sample}/{sample}_mlst.tsv', sample=samples.index)
+    ska = expand(isolate_dir + '/{sample}/{sample}.skf', sample=samples.index)
+    species_files = expand(isolate_dir + '/{sample}/{sample}_species_summary.tsv', sample=samples.index)
+    if type == 'assembly':
+        return fastas
+    if type == 'annotation':
+        return annotations
+    if type == 'metrics':
+        return metrics
+    if type == 'amrfinder':
+        return amr
+    if type == 'mlst':
+        return mlst
+    if type == 'ska':
+        return ska
+    if type == 'all':
+        #print(fastas + metrics + annotations + amr + mlst + ska + species_files)
+        return fastas + metrics + annotations + amr + mlst + ska + species_files
+        #return fastas
+
+
+    # if 'Klebsiella' in species:
+    #     kleborate_files = expand(isolate_dir / '{sample}/{sample}_kleborate.tsv", sample=samples.index)
+    #     species_files.extend(kleborate_files)
+    # if 'Mycobacterium' in species or 'Mycolicibacterium' in species:
+    #     subspecies_files = expand(isolate_dir / '{sample}/{sample}_subspecies.txt", sample=samples.index)
+    #     species_files.extend(subspecies_files)
+    return fastas + metrics + annotations + amr + mlst + ska + species_files
+
+rule all:
+    input:
+        lambda w: get_outputs(w, type='all')
+
+rule assembly:
+    input: lambda w: get_outputs(w, type='assembly')
+
+rule annotation:
+    input: lambda w: get_outputs(w, type='annotation')
+
+rule flags:
+    input: lambda w: get_outputs(w, type='metrics')
+
+rule ska:
+    input: lambda w: get_outputs(w, type='ska')
+
+rule amr:
+    input: lambda w: get_outputs(w, type='amrfinder')
+    
+rule mlsts:
+    input: lambda w: get_outputs(w, type='mlst')
+
+rule download:
+    input: download_all.input
+

@@ -1,0 +1,60 @@
+---
+
+# species sizes
+"Acinetobacter": 4000000
+"Acinetobacter baumannii": 4000000
+"Acinetobacter radioresistens": 3000000
+"Acinetobacter pittii": 4000000
+
+"Burkholderia": 7000000
+"Burkholderia cepacia": 7000000
+"Burkholderia cenocepacia": 7000000
+"Burkholderia multivorans": 7000000   
+
+"Clostridiodes difficile": 4000000
+"Clostridiodes": 4000000
+
+"Citrobacter": 5000000
+"Citrobacter braakii": 5000000
+"Citrobacter freundii": 5000000 
+
+"Enterobacter": 4900000
+
+"Enterococcus": 3200000
+"Enterococcus faecalis": 3200000
+"Enteroccocus faecium": 3200000
+
+"Escherichia": 4600000
+"Escherichia coli": 4600000
+
+"Klebsiella": 50000000
+"Klebsiella pneumoniae": 50000000
+"Klebsiella oxytoca": 5000000
+"Raolutella": 5000000
+
+"Mycobacterium": 6000000
+"Mycobacterium avium": 5000000
+"Mycobacterium abscessus": 5000000
+"Mycobacterium intracelluluare": 5000000
+"Mycobacterium gordonae": 7000000
+"Mycobacterium kansassii": 6000000
+"Mycobacterium paragordonae": 6000000
+
+"Proteus": 4100000
+
+"Providencia": 4400000
+"Providencia stuartii": 4480000
+"Providencia rettgeri": 4600000
+
+
+"Pseudomonas": 6260000
+"Pseudomonas aeruginosa": 6260000
+
+"Serratia": 5100000
+"Serratia marcescens": 5100000
+
+"Staphylococcus": 2900000
+"Staphylococcus aureus": 2900000
+
+"Stenotrophomonas": 5000000
+

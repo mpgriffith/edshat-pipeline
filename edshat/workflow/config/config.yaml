@@ -1,0 +1,51 @@
+---
+# output_dir: "edshat_results"
+
+sample_dir: 'isolates'
+sets_dir: "sets"
+database_dir: "db"
+
+# QC
+"min_coverage": 35
+"max_contigs": 350
+
+# Clustering
+SNP_threshold: 10
+linkage: "average"
+
+# output data
+output_cols: ['Sample', 'Accession Number', 'PersonID', 'Source', 'CultDate', 'DateCollected', 'SequenceDate', 'DateAnalyzed', 'ST', 'Cluster', 'SNP Range', 'NewIsolate', 'Comments']
+duplicate_columns: ['PersonID']
+
+# --- Species ---
+genome_stats_file: "../config/genome_stats.yaml"
+species_mapping:
+  mapping: "([A-Za-z]+)([\\d]+)((?:[-_][A-Za-z\\d]+)?)"
+  species:
+    "MRSA": "Staphylococcus aureus"
+    "SA": "Staphylococcus aureus"
+    "PSA": "Pseudomonas aeruginosa"
+    "PSB": "Pseudomonas"
+    "EC": "Escherichia coli"
+    "KLP": "Klebsiella pneumoniae"
+    "KLO": "Klebsiella"
+    "EB": "(Enterobacter"
+    "CD": "Clostridiodes difficile"
+    "CB": "Citrobacter"
+    "BC": "Burkholderia"
+    "LEG": "Legionella"
+    "VRE": "Enterococcus"
+    "ACIN": "Acinetobacter"
+    "MYC": "Mycobacterium"
+    "PR": "Proteus"
+    "PRV": "Providencia"
+    "SER": "Serratia"
+    "NM": "Neisseria"
+    "STEN": "Stenotrophomonas"
+species:  
+  specifics:
+    "Clostridiodes_difficile":
+      SNP_threshold: 2
+    "Mycobacterium":
+      subspcies_db: "../db/Mycobacterium_subspecies.msh"
+
