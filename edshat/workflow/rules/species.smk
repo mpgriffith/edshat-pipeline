@@ -1,5 +1,6 @@
 
 isolate_dir = config.get('isolate_dir', os.path.join(config.get('workdir', os.path.abspath(os.curdir)), 'isolates'))
+db_dir = config.get('database_dir', )
 
 rule gtdbtk:
     input: isolate_dir  + "/{sample}/{sample}.fasta"

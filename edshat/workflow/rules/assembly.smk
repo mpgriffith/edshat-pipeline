@@ -47,7 +47,7 @@ rule kraken2:
             out = isolate_dir  + "/{sample}/{sample}_kraken.out"
     params:
         paired = '--paired',
-        db = config['kraken2_db']
+        db = config['database_dir'] + '/kraken2/' 
     benchmark: isolate_dir + "/{sample}/benchmarks/kraken2.tsv"
     shell:
         "kraken2 --db {params.db} {params.paired} --report {output.report} --output {output.out} {input}"

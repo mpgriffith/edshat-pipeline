@@ -1,7 +1,7 @@
 include: "common.smk"
-include: "species.smk"
 
 import yaml
+from pathlib import Path
 
 rule annotate:
     input: isolate_dir + "/{sample}/{sample}.fasta"
@@ -9,22 +9,23 @@ rule annotate:
             isolate_dir + "/{sample}/annotation/{sample}.gbk"
     threads: 8
     log: isolate_dir + "/{sample}/logs/annotation.log"
-     benchmark: isolate_dir + "/{sample}/benchmarks/annotation.tsv"
+    benchmark: isolate_dir + "/{sample}/benchmarks/annotation.tsv"
     params:
         out_dir = isolate_dir + "/{sample}/annotation"
     
     run:
         if config.get('annotation', 'prokka') == 'bakta':
-            shell("bakta --outdir {params.out_dir} --threads {threads} --force {input} --prefix {wildcards.sample} > {log} 2>&1")
+            db_arg = f"--db {config['database_dir']}/bakta" if 'bakta' in config.get('database_dir', '') else ''
+            shell("bakta {db_arg} --outdir {params.out_dir} --threads {threads} --force {input} --prefix {wildcards.sample} > {log} 2>&1")
         else:
             shell("prokka --prefix {wildcards.sample} --outdir {params.out_dir} --cpus {threads} --force --locustag {wildcards.sample} {input} > {log} 2>&1")
 
 def get_mlst_schema(wildcards):
     species = get_species(wildcards)
     if species == 'Mycobacterium abscessus':
-        return '--schema mabscessus'
+        return '--scheme mabscessus'
     if species == 'Acinetobacter baumannii':
-        return '--schema abaumannii2'
+        return '--scheme abaumannii2'
     else:
         return ''
 
@@ -61,13 +62,6 @@ rule amrfinder:
     shell:
         "amrfinder --plus -n {input.fasta} -p {params.annot_dir}/{wildcards.sample}.faa -g {params.annot_dir}/{wildcards.sample}.gff --output {output} {params.species} {params.annot_arg} --threads {threads}"
 
-# checkpoint gtdbtk:
-#     input: fasta="{output_directory}/{sample}.fasta"
-#     output: "{output_directory}/{sample}/gtdbtk/gtdbtk.bac120.summary.tsv"
-#     params: out_dir="{output_directory}/{sample}/gtdbtk",
-#            genome_dir="{output_directory}/{sample}"
-#     shell:
-#         "gtdbtk classify_wf --genome_dir {params.genome_dir} --out_dir {params.out_dir} -x fasta --skip_ani_screen"
 
 def pass_species_check(kraken_results, expected):
     exp_genus = expected.split()[0]
@@ -127,11 +121,11 @@ def pass_assembly_check(quast_metrics, expected, found_species=None):
         return True if num_contigs <= contig_qc and depth >= depth_qc else False
 
 rule checkm:
-    input: "{output_directory}/{sample}/{sample}.fasta"
-    output: "{output_directory}/{sample}/checkm/checkm.tsv"
-    params: out_dir="{output_directory}/{sample}/checkm",
-           sample_dir="{output_directory}/{sample}"
-    log: "{output_directory}/{sample}/logs/checkm.log"
+    input: isolate_dir + "/{sample}/{sample}.fasta"
+    output: isolate_dir +"}/{sample}/checkm/checkm.tsv"
+    params: out_dir=isolate_dir +"/{sample}/checkm",
+           sample_dir=isolate_dir +"/{sample}"
+    log: isolate_dir +"/{sample}/logs/checkm.log"
     benchmark: isolate_dir + "/{sample}/benchmarks/checkm.tsv"
     shell:
         "checkm lineage_wf -x fasta {params.sample_dir} {params.out_dir} -t {threads} --tab_table -f {output} 2> {log}"

@@ -2,7 +2,7 @@
 from pathlib import Path
 
 
-db_dir = config.get('database_dir', 'db')
+db_dir = config['database_dir']
 
 kraken_db_urls = {"Standard": "https://genome-idx.s3.amazonaws.com/kraken/k2_standard_20250714.tar.gz",
             "PlusPF": "https://genome-idx.s3.amazonaws.com/kraken/k2_pluspf_20250714.tar.gz",
@@ -29,7 +29,8 @@ rule download_kraken_db:
     shell:
         """
         wget {params.url} -O {params.tar_output}
-        tar -xzvf -C {params.kraken_dir} {params.tar_output}
+        cd {params.kraken_dir}
+        tar -xvf {params.tar_output}
         rm {params.tar_output}
         """
 
@@ -47,7 +48,7 @@ rule extract_gtdbtk:
     params: db_dir = db_dir
     shell:
         """
-        tar -xzvf {input} -C {params.db_dir}/gtdbtk 
+        mkdir -p {params.db_dir}/gtdbtk
+        cd {params.db_dir}/gtdbtk/
+        tar -xvf {input} 
         """
-
-

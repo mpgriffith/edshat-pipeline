@@ -3,8 +3,8 @@ include: "rules/common.smk"
 include: "rules/assembly.smk"
 include: "rules/annotate.smk"
 include: "rules/species.smk"
-include: "rules/download.smk"
-include: "rules/comparative.smk"
+include: "rules/download_db.smk"
+# include: "rules/comparative.smk"
 
 import pandas as pd
 import os
@@ -83,6 +83,6 @@ rule amr:
 rule mlsts:
     input: lambda w: get_outputs(w, type='mlst')
 
-rule download:
-    input: download_all.input
+# rule download:
+#     input: download_all.input
 

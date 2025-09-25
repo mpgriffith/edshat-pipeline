@@ -39,6 +39,8 @@ def get_st_sets(st_sets=None):
 def get_st_species(species, st_sets=None):
     if not st_sets:
         ska_sets, st_sets = get_sets()
+    if species not in st_sets:
+        return []
     return list(st_sets[species].keys())
 
 def get_ska_skfs(wildcards, ska_sets=None):
@@ -53,30 +55,47 @@ def get_snippy_input(wildcards, itype="reference", suffix='fasta'):
     st_sets = get_st_sets()
     # reference = st_sets[wildcards.set][0]
     reference = wildcards.ref if hasattr(wildcards, 'ref') else st_sets[wildcards.set][0]
+    samples_in_set = st_sets[wildcards.set]
     if itype == "reference":
-        return config['isolate_dir'] + "/" + reference + "/annotation/" + reference + "." + suffix
+        if suffix == 'gbk':
+            return config['isolate_dir'] + "/" + reference + "/annotation/" + reference + "." + suffix
+        else:
+            return config['isolate_dir'] + "/" + reference + "/" + reference + "." + suffix
     elif itype == "snippy_folds":
-        return expand(config['isolate_dir'] + "/{sample}/snippy_" + reference + "/{sample}", sample=st_sets[wildcards.set])
+        return expand(isolate_dir + "/{sample}/snippy_{ref}/{sample}/", sample=samples_in_set, ref=reference)
     elif itype == "snippy_results":
-        return expand(config['isolate_dir'] + "/{sample}/snippy_" + reference + "/{sample}/snps.tab", sample=st_sets[wildcards.set])
+        return expand(isolate_dir + "/{sample}/snippy_{ref}/{sample}/snps.tab", sample=samples_in_set, ref=reference)
     else:
         raise ValueError("Invalid input type specified for snippy input.")
 
 
+# --- Caching mechanism for get_sets() ---
+_ska_sets_cache = None
+_snippy_sets_cache = None
+
 def get_sets():
     """
     Reads metrics files for an EXPLICIT list of samples provided in the config
-    to create Ska and Snippy comparison sets.
+    to create Ska and Snippy comparison sets. The result is cached to avoid
+    re-reading files on subsequent calls.
     """
+    global _ska_sets_cache, _snippy_sets_cache
+
+    # If the cache is already populated, return the stored values immediately.
+    if _ska_sets_cache is not None and _snippy_sets_cache is not None:
+        return _ska_sets_cache, _snippy_sets_cache
+
+    # --- This part runs only on the first call ---
     isolate_dir = Path(config.get('isolate_dir'))
     
     samples_to_analyze = config.get('analysis_samples', [])
     if not samples_to_analyze:
         print("Warning: No samples provided in 'analysis_samples' config. No sets will be made.")
+        _ska_sets_cache, _snippy_sets_cache = {}, {} # Cache the empty result
         return {}, {}
 
     # Construct paths to only the required metrics files
-    metrics_files = [isolate_dir / s / f"{s}.metrics.csv" for s in samples_to_analyze]
+    metrics_files = [isolate_dir / s / (s + ".metrics.csv") for s in samples_to_analyze]
     
     # Read only the files that actually exist, gracefully skipping missing ones
     df_list = []
@@ -84,14 +103,14 @@ def get_sets():
         if f.exists():
             df_list.append(pd.read_csv(f))
         else:
-            print(f"Warning: Could not find metrics file for sample: {f.parent.name}")
-
+            print('Warning: Skipping missing metrics file for:', str(f))
     if not df_list:
+        _ska_sets_cache, _snippy_sets_cache = {}, {} # Cache the empty result
         return {}, {}
     
 
     all_metrics_df = pd.concat(df_list, ignore_index=True)
-    pass_metrics_df = all_metrics_df[all_metrics_df['PassQC'] == True]
+    pass_metrics_df = all_metrics_df[(all_metrics_df['Isolation Flag'] == True) & (all_metrics_df['Resequencing Flag'] == True)]
 
     # --- 1. Create Ska Sets (grouped by species) ---
     ska_sets = collections.defaultdict(list)
@@ -111,7 +130,7 @@ def get_sets():
         for group_keys, group_df in all_metrics_df.groupby(['species', 'ST']):
             species, st = group_keys
             species_name = str(species).replace(' ', '_')
-            set_name = f"{species_name}_ST{st}" # e.g., Klebsiella_pneumoniae_ST11
+            set_name = species_name + '_' + 'ST' + str(st) # e.g., Klebsiella_pneumoniae_ST11
             if not species_name in snippy_sets: snippy_sets[species_name] = {}
             snippy_sets[species_name][set_name] = group_df['SpecID'].tolist()
     else: # If method is 'SPECIES' or anything else, group by species
@@ -152,7 +171,12 @@ def get_sets():
 
     print(f"🔬 Active Subgroup sets found (by {config.get('snippy_grouping_method', 'ST').upper()} with new isolates):")
     for name, samples in snippy_sets_filtered.items():
-        print(f"  - {name}: {len(samples)} samples")
-        
-    # Return the ACTIVATED and filtered dictionaries
-    return dict(ska_sets_filtered), dict(snippy_sets_filtered)
+        for st_name, st_samples in samples.items():
+            print(f"  - {name} {st_name}: {len(st_samples)} samples")
+
+    # Store the results in the global cache before returning
+    _ska_sets_cache = dict(ska_sets_filtered)
+    _snippy_sets_cache = dict(snippy_sets_filtered)
+
+    # Return the activated and filtered dictionaries
+    return _ska_sets_cache, _snippy_sets_cache

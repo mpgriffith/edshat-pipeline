@@ -66,15 +66,18 @@ rule combine_clusters:
         cluster_data = expand(set_dir + "/clusters/{set}_clusters.csv", set=get_sets()[0].keys()),
         snp_matrices = expand(set_dir + "/{set}_combined_SNP_matrix.csv", set=get_sets()[0].keys()) # Pass the list of SNP matrices via config
     output:
-        report_csv = set_dir + "/EDSHAT_" + set_name + "_New_cluster_data.csv",
-        snp_report_csv = set_dir + "/EDSHAT_" + set_name + "New_cluster_SNP_distances.csv"
+        report_csv = set_dir + "/EDSHAT_{set_name}_New_cluster_data.csv",
+        snp_report_csv = set_dir + "/EDSHAT_{set_name}_New_cluster_SNP_distances.csv"
     params:
         output_columns = config.get('output_cols', [])
     run:
-        cluster_data = pd.concat([pd.read_csv(f, header=None, index_col=0, names=['Cluster']).assign(Set=f.stem.replace('_clusters', '')) for f in cluster_files]) if len(cluster_files) > 0 else pd.DataFrame()
-        if cluster_data.empy:
-            pass
-        cluster_data['ClusterName'] = cluster_df['Set'] + '_' + cluster_df['Cluster'].astype(str)
+        cluster_files = input.cluster_data
+        cluster_data = pd.concat([pd.read_csv(f, header=None, index_col=0, names=['Cluster']).assign(Set=Path(f).stem.replace('_clusters', '')) for f in cluster_files]) if len(cluster_files) > 0 else pd.DataFrame()
+        if cluster_data.empty:
+            pd.DataFrame().to_csv(output.report_csv, index=False)
+            pd.DataFrame().to_csv(output.snp_report_csv, index=False)
+            return
+        cluster_data['ClusterName'] = cluster_data['Set'] + '_' + cluster_data['Cluster'].astype(str)
 
         snp_ms = {
             Path(f).name.split('_')[0].replace('-', ' '): pd.read_csv(f, index_col=0) 
@@ -84,7 +87,7 @@ rule combine_clusters:
         # Filtering logic
         # filter to clusters with new isolates
         new_samples = set(config.get('new_samples', []))
-        new_sample_clusters = cluster_df[cluster_data.index.isin(new_samples)].ClusterName
+        new_sample_clusters = cluster_data[cluster_data.index.isin(new_samples)].ClusterName
         new_cluster_data = cluster_data[cluster_data['ClusterName'.isin(new_sample_clusters)]]
         # SNP calculation logic
         snp_rows = []
@@ -117,7 +120,7 @@ rule combine_clusters:
             db_data['Cluster'] = cluster_data.index.map(lambda x: new_clusters.loc[x, 'ClusterName'] if x in new_clusters.index else None)
             db_data['NewIsolate'] = cluster_data.index.map(lambda x: 1 if x in samples.index else 0)
             db_data['DateAnalyzed'] = datetime.now().strftime("%Y-%m-%d")
-            db_data['SNP Range'] = cluster_data.index.map(lambda x: )
+            db_data['SNP Range'] = cluster_data.index.map(lambda x: new_clusters.loc[x, 'SNP Range'] if x in new_clusters.index else None)
             dup_cols = config.get('duplicate_columns', [])
             remove_clusters = []
             if dup_cols:

@@ -117,4 +117,13 @@ def get_config(args):
                 key, value = item.split('=')
                 change_config(config, key, value)
 
+    # Resolve database_dir to an absolute path
+    # If it's already absolute, this does nothing.
+    # If it's relative (like the default 'db'), it's resolved relative to the package installation directory.
+    db_path = Path(config['database_dir'])
+    if not db_path.is_absolute():
+        config['database_dir'] = str(SCRIPT_DIR / db_path)
+    else:
+        config['database_dir'] = str(db_path)
+
     return config

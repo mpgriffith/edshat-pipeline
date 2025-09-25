@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Dict, List
 import tempfile
 import yaml
+import subprocess
 
 def run_snakemake(
     snakefile: Path,
@@ -33,7 +34,7 @@ def run_snakemake(
         "--directory", str(workdir),
         "--cores", str(threads),
        # "--use-conda",      # Assuming you want to use conda environments
-        "--reason"          # Print the reason for each rule execution
+        "--keep-going"
     ]
 
     # Add conditional flags
@@ -62,7 +63,8 @@ def run_snakemake(
 
     try:
         # Execute Snakemake. This will block until the workflow is complete.
-        status = snakemake.main(snakemake_args)
+        cmd = ['snakemake'] + snakemake_args
+        status = subprocess.run(cmd, check=True)
         if status:
             print("✅ Workflow finished successfully.")
         else:

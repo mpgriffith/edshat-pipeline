@@ -1,4 +1,4 @@
-# EDS-HAT: Enhanced Detection System for Hospital Acquired Transmission
+# EDS-HAT Pipeline:
 
 EDS-HAT is a modular, reproducible bioinformatics pipeline for the detection and analysis of hospital-acquired transmission events using whole genome sequencing data. It automates quality control, assembly, annotation, AMR gene detection, species identification, SNP analysis, and clustering for bacterial isolates.
 
@@ -10,14 +10,15 @@ EDS-HAT is a modular, reproducible bioinformatics pipeline for the detection and
 - **Species identification**: Uses Kraken2 and MLST for species and sequence type assignment.
 - **SNP and cluster analysis**: Computes SNP distances (SKA, Snippy), builds phylogenies, and clusters isolates.
 - **Flexible configuration**: YAML-based config files for easy customization.
-- **Batch and comparative analyses**: Supports combining new and previous datasets for longitudinal surveillance.
+- **Batch and comparative analyses**: Supports combining new and previous datasets for  surveillance.
 
 ## Installation
 
 1. **Clone the repository**  
    ```bash
-   git clone <your-edshat-repo-url>
+   git clone https://github.com/mpgriffith/edshat-pipeline
    cd edshat
+   pip install .
    ```
 
 2. **Install dependencies**  
@@ -38,10 +39,19 @@ EDS-HAT is a modular, reproducible bioinformatics pipeline for the detection and
    conda activate edshat
    ```
 
-3. **Configure reference databases**  
-   Update `workflow/config/config.yaml` with paths to your reference databases (e.g., Kraken2 DB).
-
 ## Usage
+### Before running
+**Set up reference databases**  
+Download databases (kraken and gtdbtk)
+```bash
+edshat download
+```
+Download to a specific database:
+```bash
+edshat download --db_dir DATABASE_DIR
+```
+
+
 
 ### 1. Prepare your data
 
@@ -52,18 +62,25 @@ EDS-HAT is a modular, reproducible bioinformatics pipeline for the detection and
 
 Basic run:
 ```bash
-python edshat-pipeline run -i Sample1 Sample2 -o results/
+edshat run -i Sample1 Sample2 -o results/
 ```
 
 With a sample sheet:
 ```bash
-python edshat-pipeline run -i samples.csv -o results/
+edshat run -i samples.csv -o results/
 ```
+
+With a list of samples separated by line:
+```bash
+edshat run -i samples.txt -o results/
+```
+
 
 Key options:
 - `-j/--threads`: Number of threads (default: 12)
 - `--reads_dir`: Directory containing reads (default: Reads/)
-- `--config`: Additional config YAML(s)
+- `--config`: Additional config values
+-`--conifg_file`: Addition config YAML(s)
 - `--species`: Expected species or mapping file
 - `--targets`: Pipeline targets (assembly, annotation, amr, species, metrics, ska, snps, tree, etc.)
 
@@ -71,23 +88,17 @@ Key options:
 
 To add new isolates to an existing dataset and re-cluster:
 ```bash
-python edshat-pipeline combine -i new_samples.csv -d previous_metrics_or_data.csv --output_dir results/
+edshat run -i new_samples.csv -d previous_metrics_or_data.csv --output_dir results/
 ```
 
 ### 4. Output
 
-- Per-sample results in `results/isolates/<sample>/`
-- Set-level comparative results in `results/sets/<set_name>/`
+- Per-sample results in `isolates/<sample>/`
+- Set-level comparative results in `sets/<set_name>/`
 - Key outputs:
   - Assembly FASTA, annotation files, AMR results, MLST, Kraken2 reports
   - SNP distance matrices, cluster assignments, phylogenetic trees
   - Metrics and summary CSVs for downstream analysis
-
-## Configuration
-
-- Main config: [`workflow/config/config.yaml`]
-- Species mapping: [`workflow/config/species_map.yaml`]
-- Genome stats: [`workflow/config/genome_stats.yaml`]
 
 
 ## Citation
